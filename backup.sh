@@ -32,7 +32,7 @@ mkdir -p "$mount_point/Versioning"
 files=(
 	"/Users/adam/.gnupg"
 	"/Users/adam/.ssh"
-  "/Users/adam/Documents/Personal/b"
+  "/Users/adam/.b"
 )
 
 # backup with rsync
