@@ -1,16 +1,18 @@
 # Encrypted Backups with VeraCrypt and rsync on macOS
 
-For context and instructions on how to create and use these scripts, visit my [project page](https://adamfurman.me/projects).
+![Apple](https://badgen.net/badge/icon/apple?icon=apple&label)
+![macOS 26](https://badgen.net/badge/icon/26.0?icon=apple&label)
+
+For context and instructions on how to create and use these scripts, visit my [project page](https://adamfurman.me/projects/encrypted-backups-with-veracrypt-and-rsync-on-macos/).
 
 Purpose:
-Credential management backup of sparsely-changing cryptographic keys, passwords, and TOTPs to a USB drive.
+Credential management and secure backup of sparsely-changing cryptographic keys, passwords, and TOTPs to a USB drive.
 
-Tools:
-- USB Drive
+Requirements:
+- USB drive (or any storage media)
+- macOS
 - VeraCrypt
 - rsync
-- Shell scripting
-- macOS
 
 > Project inspired by Sun Knudsen's [guide](https://github.com/sunknudsen/guides/tree/main/archive/how-to-back-up-and-encrypt-data-using-rsync-and-veracrypt-on-macos).
 
