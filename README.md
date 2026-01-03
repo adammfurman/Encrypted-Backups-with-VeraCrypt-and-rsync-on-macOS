@@ -18,7 +18,11 @@ Requirements:
 
 ## example_env
 
-Rename this file to ".env" and add your volume path, mount point, and backup files. 
+Rename `example_env` to `.env` and add your volume path, mount point, and backup files.
+
+```
+mv example_env .env
+``` 
 
 ## backup.sh 
 

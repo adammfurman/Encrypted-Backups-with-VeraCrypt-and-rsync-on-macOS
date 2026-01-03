@@ -1,5 +1,5 @@
 #! /bin/sh
-source .env
+source $(dirname "$(readlink -f "$0")")/.env
 
 # ---- Set Error Handling ----------
 set -euo pipefail
