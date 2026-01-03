@@ -1,4 +1,5 @@
 #! /bin/sh
+source .env
 
 # ---- Set Error Handling ----------
 set -euo pipefail
@@ -17,22 +18,12 @@ function unmount()
 trap unmount ERR INT
 
 # ---- Mount Volume ----------
-# set path variables
-volume_path="/Volumes/[MEDIA]/[DIRECTORY]" # CHANGE TO YOUR DIRECTORY
-mount_point="/Volumes/[Backup]" # CHANGE TO YOUR VOLUME NAME
-
 # mount volume
 veracrypt --text --mount --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path" "$mount_point"
 
 # ---- Backup Files to Volume ----------
 # create a versioning folder
 mkdir -p "$mount_point/Versioning"
-
-# specify files to backup here
-files=(
-	"/YOUR/PATH/TO/DIRECTORY"
-	"/YOUR/PATH/TO/FILE"
-)
 
 # backup with rsync
 for file in "${files[@]}"; do

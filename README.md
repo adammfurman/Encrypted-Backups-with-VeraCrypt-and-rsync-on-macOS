@@ -16,6 +16,10 @@ Requirements:
 
 > Project inspired by Sun Knudsen's [guide](https://github.com/sunknudsen/guides/tree/main/archive/how-to-back-up-and-encrypt-data-using-rsync-and-veracrypt-on-macos).
 
+## example_env
+
+Rename this file to ".env" and add your volume path, mount point, and backup files. 
+
 ## backup.sh 
 
 The `backup.sh` script mounts an encrypted VeraCrypt volume from a USB drive, backs up specified directories and files, prompts a manual check, creates a hash, and safely unmounts when finished.

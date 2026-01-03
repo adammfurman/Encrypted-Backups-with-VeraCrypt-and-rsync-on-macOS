@@ -1,0 +1,15 @@
+# RENAME THIS FILE TO ".env" FOR SCRIPTS TO WORK
+
+# ---- Set Variables For Scripts ----------
+# These are example variables/paths from my project post
+# Feel free to change these to your desired paths/names
+
+# set path variables
+volume_path="/Volumes/<USB NAME>/.b"
+mount_point="/Volumes/Backup"
+
+# specify files to backup here
+files=(
+	"/Users/<USER>/.gnupg"
+	# E.g., keychain or ssh files
+)

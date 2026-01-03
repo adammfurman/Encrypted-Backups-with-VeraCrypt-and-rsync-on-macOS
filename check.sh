@@ -1,4 +1,6 @@
 #! /bin/sh
+source .env
+
 # ---- Set Error Handling ----------
 set -euo pipefail
 
@@ -12,7 +14,7 @@ normal=$(tput sgr0)
 printf "Enter backup hash: "
 read -r previous
 printf "⚙️ Checking hashes…\n"
-current=$(openssl dgst -sha512 "/Volumes/YOUR_VERACRYPT_VOLUME_PATH")
+current=$(openssl dgst -sha512 "$volume_path")
 
 # Compare hashes
 if [ "$current" != "$previous" ]; then

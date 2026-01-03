@@ -1,4 +1,5 @@
 #! /bin/sh
+source .env
 
 # ---- Set Error Handling ----------
 set -euo pipefail
@@ -15,10 +16,6 @@ function unmount()
 trap unmount ERR INT
 
 # ---- Restore ----------
-# create path variables
-volume_path="/Volumes/[MEDIA]/[DIRECTORY]" # CHANGE TO YOUR DIRECTORY
-mount_point="/Volumes/[Backup]" # CHANGE TO YOUR VOLUME NAME
-
 # Mount volume
 veracrypt --text --mount --mount-options "readonly" --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path" "$mount_point"
 
