@@ -2,6 +2,7 @@
 
 ![Apple macOS](https://img.shields.io/badge/macOS-26.0-blue?logo=apple)
 ![signed commits](https://badgen.net/static/commits/signed/green?icon=github)
+![PGP signatures](https://img.shields.io/badge/PGP%20signatures-verified-0093DD?logo=gnuprivacyguard)
 
 For context and instructions on how to create and use these scripts, visit my [project page](https://adamfurman.me/projects/encrypted-backups-with-veracrypt-and-rsync-on-macos/).
 
@@ -35,3 +36,11 @@ The `check.sh` runs an integrity check script that mounts an encrypted VeraCrypt
 ## restore.sh 
 
 The `restore.sh` script mounts an encrypted VeraCrypt volume from a USB drive, opens the volume in finder, then unmounts.
+
+## Signatures
+
+You can verify each script with my [PGP public key](https://github.com/adammfurman/pgp-public-key) to confirm authenticity and integrity.
+
+```
+gpg --verify signatures/backup.sh.asc backup.sh
+```
