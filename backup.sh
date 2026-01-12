@@ -1,16 +1,20 @@
 #! /bin/sh
-source $(dirname "$(readlink -f "$0")")/.env
+source "$(dirname "$(readlink -f "$0")")/.env"
 
 # ---- Set Error Handling ----------
 set -euo pipefail
 
 # ---- Unmount Upon Interruption ----------
 # Create unmount function
-function unmount()
+unmount()
 {
 	if [ -d "$mount_point" ]; then
 		veracrypt --text --unmount "$mount_point"
-		printf "Unmounted volume safely.\n"
+		printf "Unmounted volume %s safely.\n" "$mount_point"
+	fi
+	if [ -d "$mount_point2" ]; then
+		diskutil quiet unmount "$mount_point2"
+		printf "Unmounted volume %s safely.\n" "$mount_point2"
 	fi
 }
 
@@ -18,8 +22,9 @@ function unmount()
 trap unmount ERR INT
 
 # ---- Mount Volume ----------
-# mount volume
+# mount volume(s)
 veracrypt --text --mount --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path" "$mount_point"
+diskutil quiet image attach "$volume_path2"
 
 # ---- Backup Files to Volume ----------
 # create a versioning folder
@@ -29,7 +34,6 @@ mkdir -p "$mount_point/Versioning"
 for file in "${files[@]}"; do
 	rsync \
 		-axRS \
-		--no-specials \
 		--backup \
 		--backup-dir \
 		"$mount_point/Versioning" \
