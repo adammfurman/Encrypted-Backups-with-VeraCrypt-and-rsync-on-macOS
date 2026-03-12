@@ -13,7 +13,7 @@ normal=$(tput sgr0)
 # include the full output (i.e. SHA2-512(<Backup path>)= <hash>)
 printf "Enter backup hash: "
 read -r previous
-printf "⚙️ Checking hashes…\n"
+printf "⚙️ Checking hashes...\n"
 current=$(openssl dgst -sha512 "$volume_path")
 
 # Compare hashes
