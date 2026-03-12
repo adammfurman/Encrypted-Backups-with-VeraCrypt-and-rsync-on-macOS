@@ -13,7 +13,7 @@ unmount()
 		printf "Unmounted volume %s safely.\n" "$mount_point"
 	fi
 	if [ -d "$mount_point2" ]; then
-		diskutil quiet unmount "$mount_point2"
+		diskutil quiet eject "$mount_point2"
 		printf "Unmounted volume %s safely.\n" "$mount_point2"
 	fi
 }
@@ -40,6 +40,7 @@ for file in "${files[@]}"; do
 		"$mount_point/Versioning" \
 		--delete \
 		--suffix="$(date +".%F-%H%M%S")" \
+		--exclude ".Trashes" \
 		"$file" \
 		"$mount_point"
 done

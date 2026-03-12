@@ -11,7 +11,7 @@ unmount()
 		veracrypt --text --unmount "$mount_point"
 	fi
 	if [ -d "$mount_point2" ]; then
-		diskutil quiet unmount "$mount_point2"
+		diskutil quiet eject "$mount_point2"
 	fi
 }
 
