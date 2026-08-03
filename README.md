@@ -4,7 +4,7 @@
 ![signed commits](https://badgen.net/static/commits/signed/green?icon=github)
 ![PGP signatures](https://img.shields.io/badge/PGP%20signatures-verified-0093DD?logo=gnuprivacyguard)
 
-For context and instructions on how to create and use these scripts, visit my [project page](https://adamfurman.me/projects/encrypted-backups-with-veracrypt-and-rsync-on-macos/).
+For context and instructions on how to create and use these scripts, visit my [write-up](https://adamfurman.me/posts/encrypted-backups-with-veracrypt-and-rsync-on-macos/).
 
 Purpose:
 Credential management and secure backup of sparsely-changing cryptographic keys, passwords, and TOTPs to a USB drive.
