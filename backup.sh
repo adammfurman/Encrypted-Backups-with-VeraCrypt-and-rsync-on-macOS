@@ -40,7 +40,7 @@ for file in "${files[@]}"; do
 		"$mount_point/Versioning" \
 		--delete \
 		--suffix="$(date +".%F-%H%M%S")" \
-		--exclude ".Trashes" \
+		--exclude={'.Trashes','.TemporaryItems','.fseventsd','.Spotlight-V100'} \
 		"$file" \
 		"$mount_point"
 done
