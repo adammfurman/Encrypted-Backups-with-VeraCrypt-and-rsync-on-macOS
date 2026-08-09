@@ -66,7 +66,7 @@ printf "Generate hash (y or n)? "
 read -r answer
 if [ "$answer" = "y" ]; then
 	printf "%s\n" "⚙️ Generating..."
-	openssl dgst -sha512 "$volume_path"
+	openssl dgst -sha256 "$volume_path"
 fi
 
 # ---- FIN ----------

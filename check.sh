@@ -14,7 +14,7 @@ normal=$(tput sgr0)
 printf "Enter backup hash: "
 read -r previous
 printf "⚙️ Checking hashes...\n"
-current=$(openssl dgst -sha512 "$volume_path")
+current=$(openssl dgst -sha256 "$volume_path")
 
 # Compare hashes
 if [ "$current" != "$previous" ]; then
