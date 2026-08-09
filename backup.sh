@@ -55,6 +55,15 @@ if [ "$(find "$mount_point/Versioning" -type f -ctime +90)" != "" ]; then
 	fi
 fi
 
+# ---- Update Log File ----------
+printf "Add log entry (y or n)? "
+read -r answer
+if [ "$answer" = "y" ]; then
+	printf "Add comment: "
+	read -r comment
+	printf "$(date +%F' '%T)\t%s\n" "$comment" >> "$mount_point/backups.log"
+fi
+
 # ---- Manually Inspect Backup ----------
 open "$mount_point"
 printf "Inspect backup and press enter "
