@@ -51,7 +51,7 @@ if [ "$(find "$mount_point/Versioning" -type f -ctime +90)" != "" ]; then
 	read -r answer
 	if [ "$answer" = "y" ]; then
 		find "$mount_point/Versioning" -type f -ctime +90 -delete
-		find "$mount_point.Versioning" -type d -empty -delete
+		find "$mount_point/Versioning" -type d -empty -delete
 	fi
 fi
 
