@@ -14,8 +14,18 @@ Requirements:
 - macOS
 - VeraCrypt
 - rsync
+- b3sum (Blake3 hash commandline utility)
 
 > Project inspired by Sun Knudsen's [guide](https://github.com/sunknudsen/guides/tree/main/archive/how-to-back-up-and-encrypt-data-using-rsync-and-veracrypt-on-macos).
+
+## Features
+
+- 3 scripts for backup, integrity verification, and restoring files
+- Clean unmount for errors and interruptions
+- Versioning keeps a history of any changed or replaced files
+- Prune capability deletes versioned files after 90 days
+- Logging tracks each backup with a timestamp and comment
+- Integrity verification using BLAKE3 for fast volume hashing
 
 ## example_env
 
