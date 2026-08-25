@@ -11,7 +11,7 @@ unmount()
 		veracrypt --text --unmount "$mount_point"
 	fi
 	if [ -d "$mount_point2" ]; then
-		diskutil quiet eject "$mount_point2"
+		veracrypt --text --unmount "$mount_point2"
 	fi
 }
 
@@ -21,7 +21,7 @@ trap unmount ERR INT
 # ---- Restore ----------
 # Mount volume
 veracrypt --text --mount --mount-options "readonly" --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path" "$mount_point"
-diskutil quiet image attach "$volume_path2"
+veracrypt --text --mount --mount-options "readonly" --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path2" "$mount_point2"
 
 # Restore data
 open "$mount_point"

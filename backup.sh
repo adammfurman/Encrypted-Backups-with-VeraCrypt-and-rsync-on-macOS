@@ -13,7 +13,7 @@ unmount()
 		printf "Unmounted volume %s safely.\n" "$mount_point"
 	fi
 	if [ -d "$mount_point2" ]; then
-		diskutil quiet eject "$mount_point2"
+		veracrypt --text --unmount "$mount_point2"
 		printf "Unmounted volume %s safely.\n" "$mount_point2"
 	fi
 }
@@ -24,7 +24,7 @@ trap unmount ERR INT
 # ---- Mount Volume ----------
 # mount volume(s)
 veracrypt --text --mount --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path" "$mount_point"
-diskutil quiet image attach "$volume_path2"
+veracrypt --text --mount --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path2" "$mount_point2"
 
 # ---- Backup Files to Volume ----------
 # create a versioning folder
@@ -76,7 +76,14 @@ read -r answer
 if [ "$answer" = "y" ]; then
 	printf "%s\n" "⚙️ Generating..."
 	# openssl dgst -sha256 "$volume_path"
-	b3sum "$volume_path"
+	b3sum "$volume_path" > "$volume_path.b3"
+fi
+
+# ---- Generate Signature ----------
+printf "Generate signature (y or n)? "
+read -r answer
+if [ "$answer" = "y" ]; then
+	gpg --detach-sign -a --output "$volume_path.b3.sig" "$volume_path.b3"
 fi
 
 # ---- FIN ----------
