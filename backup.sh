@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /usr/bin/env bash
 source "$(dirname "$(readlink -f "$0")")/.env"
 
 # ---- Set Error Handling ----------
@@ -23,12 +23,15 @@ trap unmount ERR INT
 
 # ---- Mount Volume ----------
 # mount volume(s)
-veracrypt --text --mount --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path" "$mount_point"
-veracrypt --text --mount --pim "0" --keyfiles "" --protect-hidden "no" "$volume_path2" "$mount_point2"
+veracrypt --text --pim=0 --keyfiles "" --protect-hidden=no --mount "$volume_path" "$mount_point"
+veracrypt --text --pim=0 --keyfiles "" --protect-hidden=no --mount "$volume_path2" "$mount_point2"
 
 # ---- Backup Files to Volume ----------
 # create a versioning folder
 mkdir -p "$mount_point/Versioning"
+
+# create a run timestamp
+timestamp="$(date +"%F-%H%M%S")"
 
 # backup with rsync
 for file in "${files[@]}"; do
@@ -39,7 +42,7 @@ for file in "${files[@]}"; do
 		--backup-dir \
 		"$mount_point/Versioning" \
 		--delete \
-		--suffix="$(date +".%F-%H%M%S")" \
+		--suffix=".$timestamp" \
 		--exclude={'.Trashes','.TemporaryItems','.fseventsd','.Spotlight-V100'} \
 		"$file" \
 		"$mount_point"
@@ -61,7 +64,7 @@ read -r answer
 if [ "$answer" = "y" ]; then
 	printf "Add comment: "
 	read -r comment
-	printf "$(date +%F' '%T)\t%s\n" "$comment" >> "$mount_point/backups.log"
+	printf "$timestamp\t%s\n" "$comment" >> "$mount_point/backups.log"
 fi
 
 # ---- Manually Inspect Backup ----------
@@ -71,19 +74,25 @@ read -r answer
 unmount
 
 # ---- Generate Hash of Backup ----------
-printf "Generate hash (y or n)? "
-read -r answer
-if [ "$answer" = "y" ]; then
-	printf "%s\n" "⚙️ Generating..."
-	# openssl dgst -sha256 "$volume_path"
-	b3sum "$volume_path" > "$volume_path.b3"
-fi
+printf "%s\n" "⚙️ Generating hash..."
+openssl dgst -sha512 "$volume_path" > "$volume_path.sha512"
 
 # ---- Generate Signature ----------
-printf "Generate signature (y or n)? "
+printf "%s\n" "⚙️ Generating signature..."
+gpg --detach-sign -a --output "$volume_path.sha512.sig" "$volume_path.sha512"
+
+# ---- Backup to Cloud ----------
+printf "Upload to cloud (y or n)? "
 read -r answer
 if [ "$answer" = "y" ]; then
-	gpg --detach-sign -a --output "$volume_path.b3.sig" "$volume_path.b3"
+        printf "%s\n" "☁️  Uploading..."
+        if proton-drive filesystem upload \
+                "$volume_path" "$volume_path.sha512" "$volume_path.sha512.sig" \
+                "/my-files/backup/" --file-conflict-strategy replace; then
+                printf "%s\n" "✅ Uploaded to Proton Drive"
+        else
+                printf "%s\n" "⚠️  Proton Drive upload failed — local backup is still intact"
+        fi
 fi
 
 # ---- FIN ----------
