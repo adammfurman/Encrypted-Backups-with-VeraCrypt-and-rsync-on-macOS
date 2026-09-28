@@ -7,6 +7,7 @@ set -euo pipefail
 # ---- Integrity Verification ----------
 # set variables for text color
 red=$(tput setaf 1)
+green=$(tput setaf 2)
 normal=$(tput sgr0)
 
 # Ask for previous hash
@@ -14,13 +15,12 @@ normal=$(tput sgr0)
 printf "Enter backup hash: "
 read -r previous
 printf "⚙️ Checking hashes...\n"
-# current=$(openssl dgst -sha256 "$volume_path")
-current=$(b3sum "$volume_path")
+current=$(openssl dgst -sha512 "$volume_path")
 
 # Compare hashes
 if [ "$current" != "$previous" ]; then
-	printf "$red%s$normal\n" "Integrity check failed"
+	printf "${red}%s${normal}\n" "Integrity check failed"
 	exit 1
 fi
 
-printf "%s\n" "✅ Verified OK"
+printf "${green}%s${normal}\n" "Verified OK"
