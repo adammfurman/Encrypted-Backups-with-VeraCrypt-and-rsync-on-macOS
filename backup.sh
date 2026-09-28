@@ -16,8 +16,7 @@ timestamp="$(date +"%F-%H%M%S")"
 
 # ---- Backup Archive Names ----------
 superbacked_file="${volume_path}.superbacked"
-superbacked_hash="${superbacked_file}.sha512"
-superbacked_signature="${superbacked_hash}.sig"
+superbacked_signature="${superbacked_file}.sig"
 
 # ---- Unmount Upon Exit ----------
 # Create unmount function
@@ -111,34 +110,18 @@ if [ "$answer" = "y" ]; then
 		--output "$superbacked_file" \
 		"$mount_point"
 	
-	# ---- Generate Hash ----------
-	printf "%s\n" "⚙️ Hashing archive..."
-	openssl dgst -sha512 "$superbacked_file" > "$superbacked_hash"
-	
 	# ---- Generate GPG Signature ----------
 	printf "%s\n" "🔏 Generating GPG signature, touch key..."
-	gpg --detach-sign -a --output "$superbacked_signature" "$superbacked_hash"
-
-	# ---- Verifying Hash ----------
-	printf "%s\n" "🔎 Verifying SHA-512 hash..."
-	expected_hash="$(awk '{print $NF}' "$superbacked_hash")" 
-	actual_hash="$(openssl dgst -sha512 "$superbacked_file" | awk '{print $NF}')"
-
-	if [ "$expected_hash" != "$actual_hash" ]; then
-		printf "$(tput setaf 1)%s$(tput sgr0)\n" "SHA-512 verification failed"
-		exit 1
-	fi
-	printf "$(tput setaf 2)%s$(tput sgr0)\n" "SHA-512 verified: $actual_hash"
+	gpg --detach-sign -a --output "$superbacked_signature" "$superbacked_file"
 
 	# ---- Verify GPG Signature ----------
 	printf "%s\n" "🔎 Verifying GPG signature..."
-	gpg --verify "$superbacked_signature" "$superbacked_hash"
+	gpg --verify "$superbacked_signature" "$superbacked_file"
 
 	# ---- Upload ----------
 	printf "%s\n" "☁️ Uploading to Proton Drive..."
 	if proton-drive filesystem upload \
 			"$superbacked_file" \
-			"$superbacked_hash" \
 			"$superbacked_signature" \
 			"/my-files/" \
 			--file-conflict-strategy replace; then
@@ -149,12 +132,10 @@ if [ "$answer" = "y" ]; then
 	
 	# --- Cleanup Files ----------
 	if [ -f "$superbacked_file" ] &&
-		[ -f "$superbacked_hash" ] &&
 		[ -f "$superbacked_signature" ]; then
 
 		rm -f \
 			"$superbacked_file" \
-			"$superbacked_hash" \
 			"$superbacked_signature"
 	fi
 fi
