@@ -12,7 +12,7 @@ normal=$(tput sgr0)
 source "$(dirname "$(readlink -f "$0")")/.env"
 
 # ---- Run Timestamp ----------
-timestamp="$(date +"%F-%H%M%S")"
+timestamp="$(date +"%F %H:%M:%S")"
 
 # ---- Backup Archive Names ----------
 superbacked_file="${volume_path}.superbacked"
@@ -104,7 +104,7 @@ fi
 
 # ---- Delete Archived Versions >90 Days Old ----------
 if [ "$(find "$mount_point/Versioning" -type f -mtime +90)" != "" ]; then
-	printf "Do you want to prune versions older than 90 days (y or n)? "
+	printf "\nDo you want to prune versions older than 90 days (y or n)? "
 	read -r answer || answer=n
 	if [ "$answer" = "y" ]; then
 		find "$mount_point/Versioning" -type f -mtime +90 -delete
@@ -113,7 +113,7 @@ if [ "$(find "$mount_point/Versioning" -type f -mtime +90)" != "" ]; then
 fi
 
 # ---- Update Log File ----------
-printf "Add log entry (y or n)? "
+printf "\nAdd log entry (y or n)? "
 read -r answer || answer=n
 if [ "$answer" = "y" ]; then
 	printf "Add comment: "
@@ -123,11 +123,11 @@ fi
 
 # ---- Manually Inspect Backup ----------
 open "$mount_point"
-printf "Inspect backup and press enter "
+printf "\nInspect backup and press enter "
 read -r answer
 
 # ---- Backup to Cloud ----------
-printf "Upload to cloud (y or n)? "
+printf "\nUpload to cloud (y or n)? "
 read -r answer || answer=n
 if [ "$answer" = "y" ]; then
 	printf "%s\n" "📦 Creating Superbacked archive..."
@@ -166,7 +166,7 @@ fi
 unmount
 
 # ---- Generate Hash of VeraCrypt Container ----------
-printf "%s\n" "⚙️ Generating hash of VeraCrypt container..."
+printf "\n%s\n" "⚙️ Generating hash of VeraCrypt container..."
 openssl dgst -sha512 "$volume_path" > "$volume_path.sha512"
 
 # ---- Generate Signature ----------
@@ -174,4 +174,5 @@ printf "%s\n" "🔏 Generating signature..."
 gpg --detach-sign -a --output "$volume_path.sha512.sig" "$volume_path.sha512"
 
 # ---- FIN ----------
+echo "=================================================="
 printf "%s\n" "✅ Backup completed successfully"
