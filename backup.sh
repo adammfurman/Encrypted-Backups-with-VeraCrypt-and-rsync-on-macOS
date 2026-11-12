@@ -3,47 +3,79 @@
 # ---- Set Error Handling ----------
 set -euo pipefail
 
-# set variables for term color
-red=$(tput setaf 1)
-green=$(tput setaf 2)
-normal=$(tput sgr0)
-
-# ---- Source Variables ----------
-source "$(dirname "$(readlink -f "$0")")/.env"
+# ---- Set Terminal Output Variables ----------
+red=$(tput setaf 1 2>/dev/null || true)
+green=$(tput setaf 2 2>/dev/null || true)
+normal=$(tput sgr0 2>/dev/null || true)
 
 # ---- Run Timestamp ----------
-timestamp="$(date +"%F %H:%M:%S")"
+timestamp="$(date +"%F %H:%M:%S")"	# for logs
+run_id="$(date +%FT%H%M%S)"			# for versioning suffix
 
-# ---- Backup Archive Names ----------
-superbacked_file="${volume_path}.superbacked"
-superbacked_signature="${superbacked_file}.sig"
+# ---- Helper Functions ----------
+# print an error in red and exit
+fail()
+{
+	printf "%sERROR: %s%s\n" "$red" "$1" "$normal" >&2
+	exit 1
+}
+
+
+# ---- Source env file ----------
+env_file="$(dirname "$(readlink -f "$0")")/.env"
+
+# check if .env exists
+if [ ! -f "$env_file" ]; then
+	fail ".env not found at $env_file"
+fi
+
+source "$env_file"
+
+# ---- Check Required Variables ----------
+for var in volume_path mount_point volume_path2 mount_point2 superbacked; do
+	if [ -z "${!var:-}" ]; then
+		fail "Missing variables in .env: $var"
+	fi
+done
+
+# check if files declared
+if ! declare -p files > /dev/null 2>&1 || [ "${#files[@]}" -eq 0 ]; then
+	fail "No files listed in .env"
+fi
 
 # ---- Unmount Upon Exit ----------
+# check if directory is mounted
+# compares the device id to the parent, should have different id if mounted
+is_mounted()
+{
+	[ -d "$1" ] && [ "$(stat -f "%d" "$1")" != "$(stat -f "%d" "$1/..")" ]
+}
+
 # Create unmount function
 unmount()
 {
-	if [ -d "$mount_point" ]; then
-		if veracrypt --text --unmount "$mount_point"; then
-			printf "Unmounted volume %s safely.\n" "$mount_point"
-		else
-			printf "%sWARNING: Failed to unmount %s.%s\n" "$red" "$mount_point" "$normal" >&2
+	local mp
+	for mp in "${mount_point:-}" "${mount_point2:-}"; do
+		if [ -n "$mp" ] && is_mounted "$mp"; then
+			if veracrypt --text --unmount "$mp"; then
+				printf "Unmounted volume %s safely.\n" "$mp"
+			else
+				printf "%sWARNING: Failed to unmount %s.%s\n" "$red" "$mp" "$normal" >&2
+			fi
 		fi
-	fi
-
-	if [ -d "$mount_point2" ]; then
-		if veracrypt --text --unmount "$mount_point2"; then
-			printf "Unmounted volume %s safely.\n" "$mount_point2"
-		else
-			printf "%sWARNING: Failed to unmount %s.%s\n" "$red" "$mount_point2" "$normal" >&2
-		fi
-	fi
+	done
 }
 
-# Cleanup function calls unmount() and exits
+# Cleanup function calls unmount(), removes temp files, and exits
+work_dir=""
 cleanup()
 {
 	local exit_status=$?
+	set +e
 	unmount
+	if [ -n "$work_dir" ] && [ -d "$work_dir" ]; then
+		rm -rf -- "$work_dir"
+	fi
 	exit "$exit_status"
 }
 
@@ -55,33 +87,47 @@ trap 'exit 143' TERM
 # ---- Check Required Commands ----------
 for cmd in rsync openssl gpg veracrypt proton-drive "$superbacked"; do
 	if ! command -v "$cmd" > /dev/null 2>&1; then
-		printf "%sERROR: Required command not found: %s%s\n" "$red" "$cmd" "$normal" >&2
-		exit 1
+		fail "Required command not found: $cmd"
 	fi
 done
 
 # ---- Mount Volume(s) ----------
 veracrypt --text --pim=0 --keyfiles "" --protect-hidden=no --mount "$volume_path" "$mount_point"
-veracrypt --text --pim=0 --keyfiles "" --protect-hidden=no --mount "$volume_path2" "$mount_point2"
+if ! is_mounted "$mount_point"; then
+	fail "$mount_point is not a mounted volume"
+fi
+
+veracrypt --text --pim=0 --keyfiles "" --protect-hidden=no --mount-options=ro --mount "$volume_path2" "$mount_point2"
+if ! is_mounted "$mount_point2"; then
+	fail "$mount_point2 is not a mounted volume"
+fi
 
 # ---- Backup Files to Volume ----------
 printf "%s\n" "💾 Backing up files..."
 
 # create a versioning and logs folder
-if [ -d "$mount_point" ]; then
-	mkdir -p "$mount_point/Versioning" "$mount_point/Logs"
-fi
+mkdir -p "$mount_point/Versioning" "$mount_point/Logs"
 
 # backup with rsync
 for file in "${files[@]}"; do
+	# check if source files exist
+	if [ ! -e "$file" ]; then
+		fail "Source missing: $file"
+	fi
+	# check if source directory is not empty
+	if [ -d "$file" ] && [ -z "$(ls -A "$file" 2>/dev/null)" ]; then
+		fail "Source directory is empty: $file"
+	fi
+
+	# sync files
 	rsync \
 		-axRS \
 		--no-specials \
 		--backup \
 		--backup-dir="$mount_point/Versioning" \
-		--suffix=".$timestamp" \
+		--suffix=".$run_id" \
 		--delete \
-		--exclude={'.Trashes','.TemporaryItems','.fseventsd','.Spotlight-V100'} \
+		--exclude={'.Trashes','.TemporaryItems','.fseventsd','.Spotlight-V100','.DS_Store'} \
 		--log-file="$mount_point/Logs/rsync.log" \
 		--log-file-format="%-5o %f %C" \
 		--quiet \
@@ -97,7 +143,9 @@ max_size=262144  # 256 KiB in bytes
 if [ -f "$log" ] && [ "$(stat -f "%z" "$log")" -ge "$max_size" ]; then
 	rm -f "${log}.3"
 	for i in 2 1; do
-		[ -f "${log}.${i}" ] && mv "${log}.${i}" "${log}.$((i+1))"
+		if [ -f "${log}.${i}" ]; then
+			mv "${log}.${i}" "${log}.$((i+1))"
+		fi
 	done
 	mv "$log" "${log}.1"
 fi
@@ -113,66 +161,71 @@ if [ "$(find "$mount_point/Versioning" -type f -mtime +90)" != "" ]; then
 fi
 
 # ---- Update Log File ----------
-printf "\nAdd log entry (y or n)? "
-read -r answer || answer=n
-if [ "$answer" = "y" ]; then
-	printf "Add comment: "
-	read -r comment
+printf "📝 Log comment (Enter to skip): "
+read -r comment || comment=""
+if [ -n "$comment" ]; then
 	printf "%s\t%s\n" "$timestamp" "$comment" >> "$mount_point/backups.log"
 fi
 
+
 # ---- Manually Inspect Backup ----------
 open "$mount_point"
-printf "\nInspect backup and press enter "
-read -r answer
+printf "Inspect backup and press enter "
+read -r answer || true
 
 # ---- Backup to Cloud ----------
-printf "\nUpload to cloud (y or n)? "
+printf "Upload to cloud (y or n)? "
 read -r answer || answer=n
 if [ "$answer" = "y" ]; then
+	work_dir="$(mktemp -d "${TMPDIR:-/tmp}/secrets-backup.XXXXXX")"
+	superbacked_archive="$work_dir/$(basename "$volume_path").superbacked"
+	superbacked_signature="${superbacked_archive}.sig"
+	
 	printf "%s\n" "📦 Creating Superbacked archive..."
 	"$superbacked" create-standalone-archive \
+		--yubikey \
 		--force \
-		--output "$superbacked_file" \
+		--output "$superbacked_archive" \
 		"$mount_point"
 	
 	# ---- Generate GPG Signature ----------
 	printf "%s\n" "🔏 Generating GPG signature, touch key..."
-	gpg --detach-sign -a --output "$superbacked_signature" "$superbacked_file"
+	gpg --detach-sign -a --output "$superbacked_signature" "$superbacked_archive"
 
 	# ---- Verify GPG Signature ----------
 	printf "%s\n" "🔎 Verifying GPG signature..."
-	gpg --verify "$superbacked_signature" "$superbacked_file"
+	gpg --verify "$superbacked_signature" "$superbacked_archive"
 
 	# ---- Upload ----------
 	printf "%s\n" "☁️ Uploading to Proton Drive..."
 	if proton-drive filesystem upload \
-			"$superbacked_file" \
+			"$superbacked_archive" \
 			"$superbacked_signature" \
 			"/my-files/" \
 			--file-conflict-strategy replace; then
 		printf "%s\n" "✅ Uploaded to Proton Drive"
 	else
-			printf "%s%s%s\n" "$red" "⚠️  Proton Drive upload failed — local backup is still intact" "$normal"
+		printf "%s%s%s\n" "$red" "⚠️  Proton Drive upload failed, local backup is still intact" "$normal"
 	fi
 	
 	# --- Cleanup Files ----------
-	if [ -f "$superbacked_file" ] && [ -f "$superbacked_signature" ]; then
-		rm -f "$superbacked_file" "$superbacked_signature"
-	fi
+	rm -rf -- "$work_dir"
+	work_dir=""
 fi
 
 # ---- Unmount Volumes ----------
 unmount
+if is_mounted "$mount_point" || is_mounted "$mount_point2"; then
+	fail "A volume is still mounted, not hashing the container"
+fi
 
 # ---- Generate Hash of VeraCrypt Container ----------
-printf "\n%s\n" "⚙️ Generating hash of VeraCrypt container..."
+printf "%s\n" "⚙️ Generating hash of VeraCrypt container..."
 openssl dgst -sha512 "$volume_path" > "$volume_path.sha512"
 
 # ---- Generate Signature ----------
-printf "%s\n" "🔏 Generating signature..."
-gpg --detach-sign -a --output "$volume_path.sha512.sig" "$volume_path.sha512"
+printf "%s\n" "🔏 Signing hash, touch key..."
+gpg --yes --detach-sign -a --output "$volume_path.sha512.sig" "$volume_path.sha512"
 
 # ---- FIN ----------
-echo "=================================================="
 printf "%s\n" "✅ Backup completed successfully"
